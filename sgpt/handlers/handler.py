@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 from typing import Any, Callable, Dict, Generator, List, Optional
+import os
 
 from ..cache import Cache
 from ..config import cfg
@@ -20,6 +21,7 @@ additional_kwargs = {
 if use_litellm:
     import litellm  # type: ignore
 
+    os.environ["GEMINI_API_KEY"] = cfg.get("GEMINI_API_KEY")
     completion = litellm.completion
     litellm.suppress_debug_info = True
 else:
