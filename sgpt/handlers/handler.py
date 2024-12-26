@@ -24,6 +24,10 @@ if use_litellm:
     completion = litellm.completion
     litellm.suppress_debug_info = True
     additional_kwargs.pop("api_key")
+
+    import os
+    if cfg.get("GEMINI_API_KEY"):
+        os.environ["GEMINI_API_KEY"] = cfg.get("GEMINI_API_KEY")
 else:
     from openai import OpenAI
 
@@ -102,7 +106,8 @@ class Handler:
             additional_kwargs["tool_choice"] = "auto"
             additional_kwargs["tools"] = functions
             additional_kwargs["parallel_tool_calls"] = False
-
+        else:
+            additional_kwargs["tools"] = [{"googleSearch": {}}]
         response = completion(
             model=model,
             temperature=temperature,

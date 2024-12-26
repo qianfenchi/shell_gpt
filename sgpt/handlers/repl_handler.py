@@ -53,6 +53,7 @@ class ReplHandler(ChatHandler):
             if init_prompt:
                 prompt = f"{init_prompt}\n\n\n{prompt}"
                 init_prompt = ""
+            typer.echo("<<< ")
             if self.role.name == DefaultRoles.SHELL.value and prompt == "e":
                 typer.echo()
                 run_command(full_completion)
