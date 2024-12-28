@@ -13,6 +13,7 @@ from .default_handler import DefaultHandler
 class ReplHandler(ChatHandler):
     def __init__(self, chat_id: str, role: SystemRole, markdown: bool) -> None:
         super().__init__(chat_id, role, markdown)
+        self.shell_mode = True if self.role.name == DefaultRoles.SHELL.value else False
 
     @classmethod
     def _get_multiline_input(cls) -> str:
@@ -29,10 +30,12 @@ class ReplHandler(ChatHandler):
 
         info_message = (
             "Entering REPL mode, press Ctrl+C to exit."
-            if not self.role.name == DefaultRoles.SHELL.value
+            if False
             else (
-                "Entering shell REPL mode, type [e] to execute commands "
-                "or [d] to describe the commands, press Ctrl+C to exit."
+                "Entering REPL mode. "
+                "Type [role(shell)] to enter SHELL mode, and [role()] to exit SHELL mode. "
+                "Type [e] to execute commands or [d] to describe the commands while in SHELL mode. "
+                "Press Ctrl+C to exit."
             )
         )
         typer.secho(info_message, fg="yellow")
@@ -48,20 +51,33 @@ class ReplHandler(ChatHandler):
             prompt = typer.prompt(">>>", prompt_suffix=" ")
             if prompt == '"""':
                 prompt = self._get_multiline_input()
+            if prompt == "role(shell)":
+                typer.secho("Enter SHELL mode", fg="yellow")
+                self.shell_mode = True
+                continue
+            if prompt == "role()":
+                typer.secho("Exit SHELL mode", fg="yellow")
+                self.shell_mode = False
+                continue
             if prompt == "exit()":
                 raise typer.Exit()
             if init_prompt:
                 prompt = f"{init_prompt}\n\n\n{prompt}"
                 init_prompt = ""
-            typer.echo("<<< ")
-            if self.role.name == DefaultRoles.SHELL.value and prompt == "e":
-                typer.echo()
-                run_command(full_completion)
-                typer.echo()
-                rich_print(Rule(style="bold magenta"))
-            elif self.role.name == DefaultRoles.SHELL.value and prompt == "d":
-                DefaultHandler(
-                    DefaultRoles.DESCRIBE_SHELL.get_role(), self.markdown
-                ).handle(prompt=full_completion, **kwargs)
+            if self.shell_mode:
+                if prompt == "e":
+                    typer.echo()
+                    run_command(full_completion)
+                    typer.echo()
+                    rich_print(Rule(style="bold magenta"))
+                elif prompt == "d":
+                    DefaultHandler(
+                        DefaultRoles.DESCRIBE_SHELL.get_role(), self.markdown
+                    ).handle(prompt=full_completion, **kwargs)
+                else:
+                    full_completion = DefaultHandler(
+                        DefaultRoles.SHELL.get_role(), False
+                    ).handle(prompt=prompt, **kwargs)
             else:
-                full_completion = super().handle(prompt=prompt, **kwargs)
+                typer.echo("<<< ")
+                super().handle(prompt=prompt, **kwargs)
